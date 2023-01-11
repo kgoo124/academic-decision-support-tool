@@ -89,7 +89,8 @@ scm
 soc
 ss
 span
-spedstat
+sped
+stat
 th
 univ
 wvit
