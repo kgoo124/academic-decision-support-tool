@@ -1,51 +1,60 @@
 from collections import OrderedDict
 from copy import deepcopy
 from pprint import pprint
-from generate_clusters_old import build_interest_clusters
 import inquirer
+import pandas as pd
+
+JSON_PATH = "topic-models/rs-23/30topics-20words.json"
+PROGRAM = "Program"
 
 
-def aggregate_rankings(dict1, dict2):
-    dict3 = deepcopy({**dict1, **dict2})
-    for key, value in dict3.items():
-        if key in dict1 and key in dict2:
-            dict3[key]['count'] = value['count'] + dict1[key]['count']
-            dict3[key]['relative_count'] = value['relative_count'] + \
-                dict1[key]['relative_count']
-    return dict3
+def get_programs():
+    df = pd.read_csv('program_courses.csv')
+    return df[PROGRAM].unique().tolist()
+
+def aggregate_rankings_sum(ranking_df, topic_nums):
+    return ranking_df[topic_nums].sum(axis=1)
+
+
+def aggregate_rankings_mean(ranking_df, topic_nums):
+    return ranking_df[topic_nums].sum(axis=1)
 
 
 if __name__ == "__main__":
-    create_word_clouds = inquirer.prompt([inquirer.Confirm('word_clouds',
-                                                           message="Would you like to see the clusters visualized as word clouds?", default=False), ])['word_clouds']
-    print("Getting interest clusters, hold tight...")
-    interest_clusters = build_interest_clusters(
-        create_word_clouds=create_word_clouds)
-    clusters = [cluster.get_tuple() for cluster in interest_clusters]
+    program_ranking_cts = pd.read_csv("program_rankings_ct.csv", index_col=0)
+    program_ranking_relative_cts = pd.read_csv(
+        "program_rankings_relative_ct.csv", index_col=0)
 
     # prompt user for to select clusters
-    questions = [inquirer.Checkbox('interest_clusters',
-                                   message="Choose the clusters that interest you the most",
-                                   choices=clusters),
-                 inquirer.List('programs_sorted_by',
-                               message="How would you like to sort the results?",
-                               choices=[('Counts', 'count'), ('Relative Counts', 'relative_count')])]
+    questions = [inquirer.Text('interest_clusters',
+                               message="Enter the cluster nums separated by one space"
+                               ),
+                #  inquirer.List('programs_sorted_by',
+                #                message="How would you like to sort the results?",
+                #                choices=[('Counts', 'count'), ('Relative Counts', 'relative_count')]),
+                #  inquirer.Text('num_programs',
+                #                message="How many programs would you like to be recommended? (hit enter to show all)"
+                #                )
+                ]
     answers = inquirer.prompt(questions)
 
-    cluster_indexes = answers['interest_clusters']
-    programs_sorted_by = answers["programs_sorted_by"]
+    cluster_indexes = answers['interest_clusters'].split()
+    programs_sorted_by = "relative_count" # answers["programs_sorted_by"]
+    num_programs = 7  #int(answers["num_programs"]) if answers["num_programs"] else program_ranking_cts.shape[0]
 
-    # aggregate clusters
-    aggregated_cluster_dict = OrderedDict()
-    for i in cluster_indexes:
-        aggregated_cluster_dict = aggregate_rankings(aggregated_cluster_dict,
-                                                     interest_clusters[i].program_ranking)
+    # aggregate counts or relative count
+    if (programs_sorted_by == "relative_count"):
+        aggregated_rankings = program_ranking_relative_cts[cluster_indexes].mean(
+            axis=1)
+    else:
+        aggregated_rankings = program_ranking_cts[cluster_indexes].sum(axis=1)
 
-    NUM_PROGRAMS = 20
-    # print(aggregated_cluster_dict)
-    # find the top programs for the aggregated cluster
-    top_programs = sorted(aggregated_cluster_dict.items(),
-                          key=lambda x: x[1][programs_sorted_by], reverse=True)[:]
-    for key, value in top_programs:
-        print(f"{key};{value['relative_count']}")
-    # pprint(OrderedDict(top_programs))
+    with pd.option_context('display.max_rows', None,
+                           'display.max_columns', None,
+                           'display.precision', 3,
+                           ):
+        print("\nHere are the programs that best match the topic word clouds that you picked:")
+        top_programs = aggregated_rankings.sort_values(ascending=False)[:num_programs].index.tolist()
+
+        for index, program in enumerate(top_programs):
+            print(f'{index+1}. {program}')
