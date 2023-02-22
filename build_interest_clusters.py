@@ -6,7 +6,7 @@ from build_data_dict import build_course_program_dict, build_word_course_dict
 from program_decision_support import get_programs
 from wordcloud import WordCloud
 
-JSON_PATH = "topic-models/rs-23/30topics-20words.json"
+JSON_PATH = "topic-models-test/rs-23/30topics-20words.json"
 PROGRAM = "Program"
 
 def build_ranking_dict():
@@ -40,8 +40,8 @@ def build_wordclouds():
         plt.savefig(f'wordclouds/topic{index}.png')
 
 
-def generate_program_rankings():
-    with open(f'{JSON_PATH}', 'r') as f:
+def generate_program_rankings(path):
+    with open(f'{path}.json', 'r') as f:
         topics = json.load(f)
         # remove -1 index (topic outliers)
     del topics["-1"]
@@ -79,10 +79,23 @@ def generate_program_rankings():
         for program in all_programs:
             topic_program_ranking_relative_cts.loc[program, int(cluster.id)] = cluster.program_ranking[program]["relative_count"]
 
-    topic_program_ranking_cts.to_csv("program_rankings_ct.csv")
-    topic_program_ranking_relative_cts.to_csv("program_rankings_relative_ct.csv")
+    topic_program_ranking_cts.to_csv(f"{path}_program_rankings_ct.csv")
+    topic_program_ranking_relative_cts.to_csv(
+        f"{path}_program_rankings_relative_ct.csv")
+
+def iterate_through_topic_models():
+    # seeds = ["rs-5"]
+    seeds = ["rs-23", "rs-52"]
+    TOPICS = [10,20,25,30]
+    TOP_WORDS = [5, 10, 15, 20]
+    for seed in seeds:
+        for topic in TOPICS:
+            for top_word in TOP_WORDS:
+                path = f"topic-models/{seed}/{topic}topics-{top_word}words"
+                # print(path)
+                generate_program_rankings(path)
 
 if __name__ == "__main__":
     # build_wordclouds()
-    generate_program_rankings()
+    iterate_through_topic_models()
   
