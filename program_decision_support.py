@@ -39,7 +39,7 @@ if __name__ == "__main__":
     answers = inquirer.prompt(questions)
 
     cluster_indexes = answers['interest_clusters'].split()
-    programs_sorted_by = "relative_count" # answers["programs_sorted_by"]
+    programs_sorted_by = "count" # answers["programs_sorted_by"]
     num_programs = 7  #int(answers["num_programs"]) if answers["num_programs"] else program_ranking_cts.shape[0]
 
     # aggregate counts or relative count
@@ -55,6 +55,6 @@ if __name__ == "__main__":
                            ):
         print("\nHere are the programs that best match the topic word clouds that you picked:")
         top_programs = aggregated_rankings.sort_values(ascending=False)[:num_programs].index.tolist()
-
+        # print(aggregated_rankings.sort_values(ascending=False)[:num_programs]) # print all programs
         for index, program in enumerate(top_programs):
             print(f'{index+1}. {program}')

@@ -39,9 +39,9 @@ def process_corpus(corpus, language="english"):
     param_stemmer = SnowballStemmer(language)
     lemmatizer = WordNetLemmatizer()
     course_prefixes = [line.rstrip('\n') for line in open(
-        'lists/course_prefixes.txt')]  # Load .txt file line by line
+        'stopwords/course_prefixes.txt')]  # Load .txt file line by line
     other_words = [line.rstrip('\n') for line in open(
-        'lists/other_words.txt')]  # Load .txt file line by line
+        'stopwords/other_words.txt')]  # Load .txt file line by line
 
     tags_to_remove = ['IN', 'TO', 'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
 

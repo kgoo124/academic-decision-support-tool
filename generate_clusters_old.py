@@ -32,6 +32,8 @@ PROGRAM = "Program"
 
 FREQ_DIST_FILE = "word_freq.csv"
 
+plt.rcParams["font.family"] = "Times New Roman"
+
 vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=5, max_df=0.95)
 
 
@@ -60,11 +62,11 @@ def build_interest_clusters(calc_silhouette=False, create_word_clouds=False):
         data=X.toarray(), columns=vectorizer.get_feature_names_out())
     final_df = tf_idf
 
-    best_result = 12
+    best_result = 5
     kmeans_results: Dict[int, KMeans]
 
     if calc_silhouette:
-        k = 100
+        k = 30
         # run k means for a bunch of different numbers
         kmeans_results = run_multiple_k_means(k, final_df)
         silhouette(kmeans_results, final_df)
@@ -130,7 +132,7 @@ def run_k_means(k, data):
 
 
 def run_multiple_k_means(max_k, data):
-    STEP = 5
+    STEP = 1
     max_k += 1
     kmeans_results = dict()
     for k in range(2, max_k, STEP):
@@ -156,37 +158,45 @@ def centroidsDict(centroids, index):
 
 def generate_word_clouds(centroids):
     wordcloud = WordCloud(
-        max_font_size=100, background_color='white', colormap="winter")
+        width=600, height=300, max_font_size=100, max_words=20, background_color='white', colormap="viridis")
     for i in range(0, len(centroids)):
         centroid_dict = centroidsDict(centroids, i)
         wordcloud.generate_from_frequencies(centroid_dict)
 
-        plt.figure()
-        plt.title('Cluster {}'.format(i))
+        plt.figure(figsize=(4, 2), dpi=150)
+        # plt.title('Cluster {}'.format(i))
         plt.imshow(wordcloud)
         plt.axis("off")
-        plt.show()
+        plt.savefig(f'v1_wordclouds/topic{i}.png', bbox_inches='tight', pad_inches = 0)
 
 
-def silhouette(kmeans_dict, df, plot=False):
+def silhouette(kmeans_dict, df, plot=True):
     df = df.to_numpy()
-    avg_dict = dict()
     avg_list = []
     for n_clusters, kmeans in kmeans_dict.items():
         kmeans_labels = kmeans.predict(df)
         # Average Score for all Samples
         silhouette_avg = silhouette_score(df, kmeans_labels)
-        avg_list.append(silhouette_avg)
-        avg_dict.update({silhouette_avg: n_clusters})
+        avg_list.append((n_clusters, silhouette_avg))
         if(plot):
             plotSilhouette(df, n_clusters, kmeans_labels, silhouette_avg)
-    pprint(avg_dict)
+
+    silhouette_score_df = pd.DataFrame(avg_list, columns=['Num Clusters','Silhouette Score'])
+    silhouette_score_df.set_index('Num Clusters', inplace=True)
+    silhouette_score_df.plot()
+    plt.plot(5, silhouette_score_df.loc[5], marker='o', color='blue')
+    plt.text(6, silhouette_score_df.loc[5].values[0], round(silhouette_score_df.loc[5].values[0],3))
+    # print(silhouette_score_df['Silhouette Score'].sort_values(ascending=False))
+    
+    plt.savefig(f'v1_silhouette_scores/silhouette_score_averages.png', bbox_inches='tight', pad_inches = 0.1)
+
     # avg_list.plt.plot(n_clusters)
 
 
 def plotSilhouette(df, n_clusters, kmeans_labels, silhouette_avg):
     fig, ax1 = plt.subplots(1)
     fig.set_size_inches(8, 6)
+    fig.set_dpi(150)
     ax1.set_xlim([-0.2, 1])
     ax1.set_ylim([0, len(df) + (n_clusters + 1) * 10])
 
@@ -211,10 +221,12 @@ def plotSilhouette(df, n_clusters, kmeans_labels, silhouette_avg):
         ax1.fill_betweenx(np.arange(y_lower, y_upper), 0, ith_cluster_silhouette_values,
                           facecolor=color, edgecolor=color, alpha=0.7)
 
-        # Label the silhouette plots with their cluster numbers at the middle
-        ax1.text(-0.05, y_lower + 0.5 * size_cluster_i, str(i))
+        if (n_clusters <= 20):
+            # Label the silhouette plots with their cluster numbers at the middle
+            ax1.text(-0.05, y_lower + 0.35 * size_cluster_i, str(i))
+
         y_lower = y_upper + 10  # Compute the new y_lower for next plot. 10 for the 0 samples
-    plt.show()
+    plt.savefig(f'v1_silhouette_scores/{n_clusters}clusters.png', bbox_inches='tight', pad_inches = 0.1)
 
 
 def get_top_features_cluster(tf_idf_array, prediction, n_feats):
@@ -243,4 +255,4 @@ def plotWords(dfs, n_feats):
 
 
 if __name__ == "__main__":
-    build_interest_clusters()
+    build_interest_clusters(calc_silhouette=True, create_word_clouds=False)

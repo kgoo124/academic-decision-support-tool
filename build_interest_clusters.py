@@ -9,6 +9,8 @@ from wordcloud import WordCloud
 JSON_PATH = "topic-models-test/rs-23/30topics-20words.json"
 PROGRAM = "Program"
 
+plt.rcParams["font.family"] = "Times New Roman"
+
 def build_ranking_dict():
     df = pd.read_csv('program_courses.csv')
     programs = df[PROGRAM].unique().tolist()
@@ -29,15 +31,15 @@ def build_wordclouds():
             topic_dict[word] = frequency if int(index) < 10 else words[10][1]
 
         wordcloud = WordCloud(
-            max_font_size=70, background_color='white', colormap="winter")
+            width=800, height=400, max_font_size=140, background_color='white', colormap="winter")
 
         wordcloud.generate_from_frequencies(topic_dict)
 
-        plt.figure()
-        plt.title('Cluster {}'.format(index))
+        plt.figure(figsize=(4, 2), dpi=300)
+        # plt.title('Cluster {}'.format(index))
         plt.imshow(wordcloud)
         plt.axis("off")
-        plt.savefig(f'wordclouds/topic{index}.png')
+        plt.savefig(f'v3_wordclouds/topic{index}.png', bbox_inches='tight', pad_inches = 0)
 
 
 def generate_program_rankings(path):
@@ -96,6 +98,6 @@ def iterate_through_topic_models():
                 generate_program_rankings(path)
 
 if __name__ == "__main__":
-    # build_wordclouds()
-    iterate_through_topic_models()
+    build_wordclouds()
+    # iterate_through_topic_models()
   
