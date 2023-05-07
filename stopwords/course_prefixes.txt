@@ -46,8 +46,7 @@ fr
 geog
 geol
 ger
-
-                  gs
+gs
 gsa
 gsb
 gse
